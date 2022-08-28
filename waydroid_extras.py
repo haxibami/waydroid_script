@@ -13,7 +13,14 @@ import re
 
 download_loc = ""
 if os.environ.get("XDG_CACHE_HOME", None) is None:
-    download_loc = os.path.join('/', "home", os.environ.get("SUDO_USER", os.environ["USER"]), ".cache", "waydroid_script", "downloads")
+    download_loc = os.path.join(
+        "/",
+        "home",
+        os.environ.get("SUDO_USER", os.environ["USER"]),
+        ".cache",
+        "waydroid_script",
+        "downloads",
+    )
 else:
     os.path.join(os.environ["XDG_CACHE_HOME"], "waydroid_script", "downloads")
 
@@ -22,6 +29,7 @@ print(download_loc)
 if not os.path.exists(download_loc):
     os.makedirs(download_loc)
 
+
 def stop_waydroid():
     print("==> Stopping waydroid and unmounting already mounted images...")
     os.system("waydroid container stop &> /dev/null")
@@ -29,13 +37,14 @@ def stop_waydroid():
     os.system("umount /var/lib/waydroid/rootfs/vendor &> /dev/null")
     os.system("umount /var/lib/waydroid/rootfs &> /dev/null")
 
+
 def download_file(url, f_name):
     md5 = ""
     response = requests.get(url, stream=True)
-    total_size_in_bytes = int(response.headers.get('content-length', 0))
+    total_size_in_bytes = int(response.headers.get("content-length", 0))
     block_size = 1024  # 1 Kibibyte
-    progress_bar = tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True)
-    with open(f_name, 'wb') as file:
+    progress_bar = tqdm(total=total_size_in_bytes, unit="iB", unit_scale=True)
+    with open(f_name, "wb") as file:
         for data in response.iter_content(block_size):
             progress_bar.update(len(data))
             file.write(data)
@@ -47,6 +56,7 @@ def download_file(url, f_name):
         print("==> Something went wrong while downloading")
         sys.exit(1)
     return md5
+
 
 def get_image_dir():
     # Read waydroid config to get image location
@@ -62,6 +72,7 @@ def get_image_dir():
         sys.exit(1)
     return cfg["waydroid"]["images_path"]
 
+
 def mount_image(image, mount_point):
     print("==> Unmounting .. ")
     try:
@@ -72,32 +83,61 @@ def mount_image(image, mount_point):
     if not os.path.exists(mount_point):
         os.makedirs(mount_point)
     try:
-        subprocess.check_output(["mount", "-o", "rw", image, mount_point], stderr=subprocess.STDOUT)
+        subprocess.check_output(
+            ["mount", "-o", "rw", image, mount_point], stderr=subprocess.STDOUT
+        )
     except subprocess.CalledProcessError as e:
-        print("==> Failed to mount system image... !  {}".format(str(e.output.decode())))
+        print(
+            "==> Failed to mount system image... !  {}".format(str(e.output.decode()))
+        )
         sys.exit(1)
+
 
 def resize_img(img_file, size):
     # Resize the system image
     print("==> Resizing system image....")
     try:
-        subprocess.check_output(["e2fsck -y -f "+img_file], stderr=subprocess.STDOUT, shell=True)
-        subprocess.check_output(["resize2fs '{}' {}".format(img_file, size)], stderr=subprocess.STDOUT, shell=True)
+        subprocess.check_output(
+            ["e2fsck -y -f " + img_file], stderr=subprocess.STDOUT, shell=True
+        )
+        subprocess.check_output(
+            ["resize2fs '{}' {}".format(img_file, size)],
+            stderr=subprocess.STDOUT,
+            shell=True,
+        )
     except subprocess.CalledProcessError as e:
-        print("==> Failed to resize image '{}' .. !  {}".format(img_file, str(e.output.decode())))
-        p = input("==> You can exit and retry with sudo or force continue (May fail installation !), Continue ? [y/N]: ")
+        print(
+            "==> Failed to resize image '{}' .. !  {}".format(
+                img_file, str(e.output.decode())
+            )
+        )
+        p = input(
+            "==> You can exit and retry with sudo or force continue (May fail installation !), Continue ? [y/N]: "
+        )
         if not p.lower() == "y":
             sys.exit(1)
 
 
-def install_gapps():
+def install_gapps_a11():
 
     dl_links = {
-            "x86_64": ["https://master.dl.sourceforge.net/project/opengapps/x86_64/20220121/open_gapps-x86_64-10.0-pico-20220121.zip?viasf=1", "e8c9a7412f5712eea7948957a62a7d66"],
-            "x86": ["https://udomain.dl.sourceforge.net/project/opengapps/x86/20220122/open_gapps-x86-10.0-pico-20220122.zip", "9e39e45584b7ade4529e6be654af7b81"],
-            "aarch64": ["https://liquidtelecom.dl.sourceforge.net/project/opengapps/arm64/20220122/open_gapps-arm64-10.0-pico-20220122.zip", "8dfa6e76aeb2d1d5aed40b058e8a852c"],
-            "arm": ["https://nav.dl.sourceforge.net/project/opengapps/arm/20220122/open_gapps-arm-10.0-pico-20220122.zip", "a48ccbd25eb0a3c5e30f5db5435f5536"]
-        }
+        "x86_64": [
+            "https://master.dl.sourceforge.net/project/opengapps/x86_64/20220503/open_gapps-x86_64-11.0-pico-20220503.zip?viasf=1",
+            "5a6d242be34ad1acf92899c7732afa1b",
+        ],
+        "x86": [
+            "https://udomain.dl.sourceforge.net/project/opengapps/x86/20220503/open_gapps-x86-11.0-pico-20220503.zip",
+            "efda4943076016d00b40e0874b12ddd3",
+        ],
+        "aarch64": [
+            "https://liquidtelecom.dl.sourceforge.net/project/opengapps/arm64/20220503/open_gapps-arm64-11.0-pico-20220503.zip",
+            "67e927e4943757f418e4f934825cf987",
+        ],
+        "arm": [
+            "https://nav.dl.sourceforge.net/project/opengapps/arm/20220215/open_gapps-arm-11.0-pico-20220215.zip",
+            "",
+        ],
+    }
     if platform.machine() not in dl_links.keys():
         print("==> Unsupported architecture '{}' .. ".format(platform.machine()))
         sys.exit(1)
@@ -110,12 +150,10 @@ def install_gapps():
     non_apks = [
         "defaultetc-common.tar.lz",
         "defaultframework-common.tar.lz",
-        "googlepixelconfig-common.tar.lz"
-        ]
-    skip = [
-        "setupwizarddefault-x86_64.tar.lz",
-        "setupwizardtablet-x86_64.tar.lz"
-        ]
+        "googlepixelconfig-common.tar.lz",
+        "vending-common.tar.lz",
+    ]
+    skip = ["setupwizarddefault-x86_64.tar.lz", "setupwizardtablet-x86_64.tar.lz"]
 
     if not os.path.exists(extract_to):
         os.makedirs(extract_to)
@@ -123,22 +161,25 @@ def install_gapps():
         os.makedirs(os.path.join(extract_to, "appunpack"))
 
     if os.path.isfile(dl_file_name):
-        with open(dl_file_name,"rb") as f:
+        with open(dl_file_name, "rb") as f:
             bytes = f.read()
             loc_md5 = hashlib.md5(bytes).hexdigest()
     print("==> Excepted hash: {}  | File hash: {}".format(act_md5, loc_md5))
 
-
     system_img = os.path.join(get_image_dir(), "system.img")
     if not os.path.isfile(system_img):
-        print("The system image path '{}' from waydroid config is not valid !".format(system_img))
+        print(
+            "The system image path '{}' from waydroid config is not valid !".format(
+                system_img
+            )
+        )
         sys.exit(1)
-    print("==> Found system image: "+system_img)
+    print("==> Found system image: " + system_img)
 
-    img_size = int(os.path.getsize(system_img)/(1024*1024))
+    img_size = int(os.path.getsize(system_img) / (1024 * 1024))
 
     # Resize image to get some free space
-    resize_img(system_img, "{}M".format(img_size+500))
+    resize_img(system_img, "{}M".format(img_size + 500))
 
     # Mount the system image
     mount_image(system_img, sys_image_mount)
@@ -147,13 +188,15 @@ def install_gapps():
     while not os.path.isfile(dl_file_name) or loc_md5 != act_md5:
         if os.path.isfile(dl_file_name):
             os.remove(dl_file_name)
-        print("==> OpenGapps zip not downloaded or hash mismatches, downloading now .....")
+        print(
+            "==> OpenGapps zip not downloaded or hash mismatches, downloading now ....."
+        )
         loc_md5 = download_file(google_apps_dl_link, dl_file_name)
 
     # Extract opengapps
     print("==> Extracting opengapps...")
     with zipfile.ZipFile(dl_file_name) as z:
-            z.extractall(extract_to)
+        z.extractall(extract_to)
 
     # Now copy the files
     for lz_file in os.listdir(os.path.join(extract_to, "Core")):
@@ -161,62 +204,110 @@ def install_gapps():
             shutil.rmtree(os.path.join(extract_to, "appunpack", d))
         if lz_file not in skip:
             if lz_file not in non_apks:
-                print("==> Processing app package : "+os.path.join(extract_to, "Core", lz_file))
-                os.system("tar --lzip -xvf '{}' -C '{}'>/dev/null".format(os.path.join(extract_to, "Core", lz_file), os.path.join(extract_to, "appunpack")))
+                print(
+                    "==> Processing app package : "
+                    + os.path.join(extract_to, "Core", lz_file)
+                )
+                os.system(
+                    "tar --lzip -xvf '{}' -C '{}'>/dev/null".format(
+                        os.path.join(extract_to, "Core", lz_file),
+                        os.path.join(extract_to, "appunpack"),
+                    )
+                )
                 app_name = os.listdir(os.path.join(extract_to, "appunpack"))[0]
                 xx_dpi = os.listdir(os.path.join(extract_to, "appunpack", app_name))[0]
-                app_priv = os.listdir(os.path.join(extract_to, "appunpack", app_name, "nodpi"))[0]
-                app_src_dir = os.path.join(extract_to, "appunpack", app_name, xx_dpi, app_priv)
+                app_priv = os.listdir(
+                    os.path.join(extract_to, "appunpack", app_name, "nodpi")
+                )[0]
+                app_src_dir = os.path.join(
+                    extract_to, "appunpack", app_name, xx_dpi, app_priv
+                )
                 for app in os.listdir(app_src_dir):
-                    shutil.copytree(os.path.join(app_src_dir, app), os.path.join(sys_image_mount, "system", "priv-app", app), dirs_exist_ok=True)
+                    shutil.copytree(
+                        os.path.join(app_src_dir, app),
+                        os.path.join(sys_image_mount, "system", "priv-app", app),
+                        dirs_exist_ok=True,
+                    )
             else:
-                print("==> Processing extra package : "+os.path.join(extract_to, "Core", lz_file))
-                os.system("tar --lzip -xvf '{}' -C '{}'>/dev/null".format(os.path.join(extract_to, "Core", lz_file), os.path.join(extract_to, "appunpack")))
+                print(
+                    "==> Processing extra package : "
+                    + os.path.join(extract_to, "Core", lz_file)
+                )
+                os.system(
+                    "tar --lzip -xvf '{}' -C '{}'>/dev/null".format(
+                        os.path.join(extract_to, "Core", lz_file),
+                        os.path.join(extract_to, "appunpack"),
+                    )
+                )
                 app_name = os.listdir(os.path.join(extract_to, "appunpack"))[0]
-                common_content_dirs = os.listdir(os.path.join(extract_to, "appunpack", app_name, "common"))
+                common_content_dirs = os.listdir(
+                    os.path.join(extract_to, "appunpack", app_name, "common")
+                )
                 for ccdir in common_content_dirs:
-                    shutil.copytree(os.path.join(extract_to, "appunpack", app_name, "common", ccdir), os.path.join(sys_image_mount, "system", ccdir), dirs_exist_ok=True)
+                    shutil.copytree(
+                        os.path.join(
+                            extract_to, "appunpack", app_name, "common", ccdir
+                        ),
+                        os.path.join(sys_image_mount, "system", ccdir),
+                        dirs_exist_ok=True,
+                    )
     print("==> Unmounting .. ")
     try:
         subprocess.check_output(["umount", sys_image_mount], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         print("==> Warning: umount failed.. {} ".format(str(e.output.decode())))
     print("==> OpenGapps installation complete try re init /restarting waydroid")
-    print("==> Please note, google apps wont be usable without device registration !, Use --get-android-id for registration instructions")
+    print(
+        "==> Please note, google apps wont be usable without device registration !, Use --get-android-id for registration instructions"
+    )
 
 
 def get_android_id():
     try:
-        if not os.path.isfile("/var/lib/waydroid/data/data/com.google.android.gsf/databases/gservices.db"):
-            print("Cannot access gservices.db, make sure gapps is installed and waydroid was started at least once after installation and make sure waydroid is running !")
+        if not os.path.isfile(
+            "/var/lib/waydroid/data/data/com.google.android.gsf/databases/gservices.db"
+        ):
+            print(
+                "Cannot access gservices.db, make sure gapps is installed and waydroid was started at least once after installation and make sure waydroid is running !"
+            )
             sys.exit(1)
         sqs = """
                 SELECT * FROM main WHERE name='android_id'
             """
-        queryout = subprocess.check_output(["sqlite3", "/var/lib/waydroid/data/data/com.google.android.gsf/databases/gservices.db", sqs.strip()], stderr=subprocess.STDOUT)
+        queryout = subprocess.check_output(
+            [
+                "sqlite3",
+                "/var/lib/waydroid/data/data/com.google.android.gsf/databases/gservices.db",
+                sqs.strip(),
+            ],
+            stderr=subprocess.STDOUT,
+        )
         print(queryout.decode().replace("android_id|", "").strip())
         print("   ^----- Open https://google.com/android/uncertified/?pli=1")
-        print("          Login with your google id then submit the form with id shown above")
+        print(
+            "          Login with your google id then submit the form with id shown above"
+        )
     except subprocess.CalledProcessError as e:
         print("==> Error getting id... '{}' ".format(str(e.output.decode())))
+
 
 def install_ndk():
     sys_image_mount = "/tmp/waydroidimage"
     ndk_zip_url = "https://github.com/newbit1/libndk_translation_Module/archive/c6077f3398172c64f55aad7aab0e55fad9110cf3.zip"
     dl_file_name = os.path.join(download_loc, "libndktranslation.zip")
-    extract_to = "/tmp/libndkunpack" #All catalog files will be marked as executable!
+    extract_to = "/tmp/libndkunpack"  # All catalog files will be marked as executable!
     act_md5 = "5e8e0cbde0e672fdc2b47f20a87472fd"
     loc_md5 = ""
     apply_props = {
-        "ro.product.cpu.abilist": "x86_64,x86,armeabi-v7a,armeabi", #arm64-v8a,
+        "ro.product.cpu.abilist": "x86_64,x86,armeabi-v7a,armeabi",  # arm64-v8a,
         "ro.product.cpu.abilist32": "x86,armeabi-v7a,armeabi",
-        "ro.product.cpu.abilist64": "x86_64", #,arm64-v8a",
+        "ro.product.cpu.abilist64": "x86_64",  # ,arm64-v8a",
         "ro.dalvik.vm.native.bridge": "libndk_translation.so",
         "ro.enable.native.bridge.exec": "1",
         "ro.ndk_translation.version": "0.2.2",
         "ro.dalvik.vm.isa.arm": "x86",
-        "ro.dalvik.vm.isa.arm64": "x86_64"
-        }
+        "ro.dalvik.vm.isa.arm64": "x86_64",
+    }
     init_rc_component = """
 on early-init
     mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
@@ -228,21 +319,25 @@ on property:ro.enable.native.bridge.exec=1
     exec -- /system/bin/sh -c "cat /system/etc/binfmt_misc/arm64_dyn >> /proc/sys/fs/binfmt_misc/register"
     """
     if os.path.isfile(dl_file_name):
-        with open(dl_file_name,"rb") as f:
+        with open(dl_file_name, "rb") as f:
             bytes = f.read()
             loc_md5 = hashlib.md5(bytes).hexdigest()
 
     system_img = os.path.join(get_image_dir(), "system.img")
     if not os.path.isfile(system_img):
-        print("The system image path '{}' from waydroid config is not valid !".format(system_img))
+        print(
+            "The system image path '{}' from waydroid config is not valid !".format(
+                system_img
+            )
+        )
         sys.exit(1)
-    print("==> Found system image: "+system_img)
+    print("==> Found system image: " + system_img)
 
     # Resize rootfs
-    img_size = int(os.path.getsize(system_img)/(1024*1024))
+    img_size = int(os.path.getsize(system_img) / (1024 * 1024))
 
     # Resize image to get some free space
-    resize_img(system_img, "{}M".format(img_size+50))
+    resize_img(system_img, "{}M".format(img_size + 50))
 
     # Mount the system image
     mount_image(system_img, sys_image_mount)
@@ -251,22 +346,34 @@ on property:ro.enable.native.bridge.exec=1
     while not os.path.isfile(dl_file_name) or loc_md5 != act_md5:
         if os.path.isfile(dl_file_name):
             os.remove(dl_file_name)
-        print("==> NDK Translation zip not downloaded or hash mismatches, downloading now .....")
+        print(
+            "==> NDK Translation zip not downloaded or hash mismatches, downloading now ....."
+        )
         loc_md5 = download_file(ndk_zip_url, dl_file_name)
 
     # Extract ndk files
     print("==> Extracting archive...")
     with zipfile.ZipFile(dl_file_name) as z:
-            z.extractall(extract_to)
+        z.extractall(extract_to)
 
-    #Mark ndk files as executable
+    # Mark ndk files as executable
     print("==> Chmodding...")
-    try: os.system("chmod +x "+extract_to+" -R")
-    except: print("==> Couldn't mark files as executable!")
-    
+    try:
+        os.system("chmod +x " + extract_to + " -R")
+    except:
+        print("==> Couldn't mark files as executable!")
+
     # Copy library file
     print("==> Copying library files ...")
-    shutil.copytree(os.path.join(extract_to, "libndk_translation_Module-c6077f3398172c64f55aad7aab0e55fad9110cf3", "system"), os.path.join(sys_image_mount, "system"), dirs_exist_ok=True)
+    shutil.copytree(
+        os.path.join(
+            extract_to,
+            "libndk_translation_Module-c6077f3398172c64f55aad7aab0e55fad9110cf3",
+            "system",
+        ),
+        os.path.join(sys_image_mount, "system"),
+        dirs_exist_ok=True,
+    )
 
     # Add entries to build.prop
     print("==> Adding arch in build.prop")
@@ -274,13 +381,18 @@ on property:ro.enable.native.bridge.exec=1
         prop_content = propfile.read()
         for key in apply_props:
             if key not in prop_content:
-                prop_content = prop_content+"\n{key}={value}".format(key=key, value=apply_props[key])
+                prop_content = prop_content + "\n{key}={value}".format(
+                    key=key, value=apply_props[key]
+                )
             else:
                 p = re.compile(r"^{key}=.*$".format(key=key), re.M)
-                prop_content = re.sub(p, "{key}={value}".format(key=key, value=apply_props[key]), prop_content)
+                prop_content = re.sub(
+                    p,
+                    "{key}={value}".format(key=key, value=apply_props[key]),
+                    prop_content,
+                )
     with open(os.path.join(sys_image_mount, "system", "build.prop"), "w") as propfile:
         propfile.write(prop_content)
-
 
     # Add entry to init.rc
     print("==> Adding entry to init.rc")
@@ -292,7 +404,7 @@ on property:ro.enable.native.bridge.exec=1
     with open(init_path, "r") as initfile:
         initcontent = initfile.read()
         if init_rc_component not in initcontent:
-            initcontent=initcontent+init_rc_component
+            initcontent = initcontent + init_rc_component
     with open(init_path, "w") as initfile:
         initfile.write(initcontent)
 
@@ -303,15 +415,19 @@ on property:ro.enable.native.bridge.exec=1
     except subprocess.CalledProcessError as e:
         print("==> Warning: umount failed.. {} ".format(str(e.output.decode())))
 
-    print("==> libndk translation installed ! Restart waydroid service to apply changes !")
+    print(
+        "==> libndk translation installed ! Restart waydroid service to apply changes !"
+    )
 
 
 def install_houdini():
     sys_image_mount = "/tmp/waydroidimage"
-    houdini_zip_url = "https://raw.githubusercontent.com/casualsnek/miscpackages/main/libhoudini_a11.zip"
+    houdini_zip_url = (
+        "https://raw.githubusercontent.com/haxibami/pkgs/main/libhoudini_a11.zip"
+    )
     dl_file_name = os.path.join(download_loc, "libhoudini.zip")
-    extract_to = "/tmp/houdiniunpack" #All catalog files will be marked as executable!
-    act_md5 = "c9a80831641de8fd44ccf93a0ad8b585"
+    extract_to = "/tmp/houdiniunpack"  # All catalog files will be marked as executable!
+    act_md5 = "1443c85a896cb8c0b6d1a9a66430a119"
     loc_md5 = ""
 
     apply_props = {
@@ -321,8 +437,8 @@ def install_houdini():
         "ro.dalvik.vm.native.bridge": "libhoudini.so",
         "ro.enable.native.bridge.exec": "1",
         "ro.dalvik.vm.isa.arm": "x86",
-        "ro.dalvik.vm.isa.arm64": "x86_64"
-        }
+        "ro.dalvik.vm.isa.arm64": "x86_64",
+    }
     init_rc_component = """
 on early-init
     mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
@@ -335,21 +451,24 @@ on property:ro.enable.native.bridge.exec=1
     """
 
     if os.path.isfile(dl_file_name):
-        with open(dl_file_name,"rb") as f:
+        with open(dl_file_name, "rb") as f:
             bytes = f.read()
             loc_md5 = hashlib.md5(bytes).hexdigest()
 
     system_img = os.path.join(get_image_dir(), "system.img")
     if not os.path.isfile(system_img):
-        print("The system image path '{}' from waydroid config is not valid !".format(system_img))
+        print(
+            "The system image path '{}' from waydroid config is not valid !".format(
+                system_img
+            )
+        )
         sys.exit(1)
-    print("==> Found system image: "+system_img)
+    print("==> Found system image: " + system_img)
 
-    img_size = int(os.path.getsize(system_img)/(1024*1024))
+    img_size = int(os.path.getsize(system_img) / (1024 * 1024))
 
     # Resize image to get some free space
-    resize_img(system_img, "{}M".format(img_size+300))
-
+    resize_img(system_img, "{}M".format(img_size + 300))
 
     # Mount the system image
     mount_image(system_img, sys_image_mount)
@@ -358,22 +477,30 @@ on property:ro.enable.native.bridge.exec=1
     while not os.path.isfile(dl_file_name) or loc_md5 != act_md5:
         if os.path.isfile(dl_file_name):
             os.remove(dl_file_name)
-        print("==> libhoudini zip not downloaded or hash mismatches, downloading now .....")
+        print(
+            "==> libhoudini zip not downloaded or hash mismatches, downloading now ....."
+        )
         loc_md5 = download_file(houdini_zip_url, dl_file_name)
 
     # Extract ndk files
     print("==> Extracting archive...")
     with zipfile.ZipFile(dl_file_name) as z:
-            z.extractall(extract_to)
+        z.extractall(extract_to)
 
     # Mark libhoudini files as executable
     print("==> Chmodding...")
-    try: os.system("chmod +x "+extract_to+" -R")
-    except: print("==> Couldn't mark files as executable!")
+    try:
+        os.system("chmod +x " + extract_to + " -R")
+    except:
+        print("==> Couldn't mark files as executable!")
 
     # Copy library file
     print("==> Copying library files ...")
-    shutil.copytree(os.path.join(extract_to, "system"), os.path.join(sys_image_mount, "system"), dirs_exist_ok=True)
+    shutil.copytree(
+        os.path.join(extract_to, "system"),
+        os.path.join(sys_image_mount, "system"),
+        dirs_exist_ok=True,
+    )
 
     # Add entries to build.prop
     print("==> Adding arch in build.prop")
@@ -381,10 +508,16 @@ on property:ro.enable.native.bridge.exec=1
         prop_content = propfile.read()
         for key in apply_props:
             if key not in prop_content:
-                prop_content = prop_content+"\n{key}={value}".format(key=key, value=apply_props[key])
+                prop_content = prop_content + "\n{key}={value}".format(
+                    key=key, value=apply_props[key]
+                )
             else:
                 p = re.compile(r"^{key}=.*$".format(key=key), re.M)
-                prop_content = re.sub(p, "{key}={value}".format(key=key, value=apply_props[key]), prop_content)
+                prop_content = re.sub(
+                    p,
+                    "{key}={value}".format(key=key, value=apply_props[key]),
+                    prop_content,
+                )
     with open(os.path.join(sys_image_mount, "system", "build.prop"), "w") as propfile:
         propfile.write(prop_content)
 
@@ -398,7 +531,7 @@ on property:ro.enable.native.bridge.exec=1
     with open(init_path, "r") as initfile:
         initcontent = initfile.read()
         if init_rc_component not in initcontent:
-            initcontent=initcontent+init_rc_component
+            initcontent = initcontent + init_rc_component
     with open(init_path, "w") as initfile:
         initfile.write(initcontent)
 
@@ -409,12 +542,18 @@ on property:ro.enable.native.bridge.exec=1
     except subprocess.CalledProcessError as e:
         print("==> Warning: umount failed.. {} ".format(str(e.output.decode())))
 
-    print("==> libhoudini translation installed ! Restart waydroid service to apply changes !")
+    print(
+        "==> libhoudini translation installed ! Restart waydroid service to apply changes !"
+    )
 
 
 def install_magisk():
-    dl_link = "https://github.com/topjohnwu/Magisk/releases/download/v20.4/Magisk-v20.4.zip"
-    busybox_dl_link = "https://github.com/Gnurou/busybox-android/raw/master/busybox-android"
+    dl_link = (
+        "https://github.com/topjohnwu/Magisk/releases/download/v20.4/Magisk-v20.4.zip"
+    )
+    busybox_dl_link = (
+        "https://github.com/Gnurou/busybox-android/raw/master/busybox-android"
+    )
     busybox_dl_file_name = os.path.join(download_loc, "busybox-android")
     dl_file_name = os.path.join(download_loc, "magisk.zip")
     extract_to = "/tmp/magisk_unpack"
@@ -453,26 +592,29 @@ service magisk /system/bin/init-magisk.sh
     oneshot
     """
     if os.path.isfile(dl_file_name):
-        with open(dl_file_name,"rb") as f:
+        with open(dl_file_name, "rb") as f:
             bytes = f.read()
             loc_md5 = hashlib.md5(bytes).hexdigest()
 
     if os.path.isfile(busybox_dl_file_name):
-        with open(busybox_dl_file_name,"rb") as f:
+        with open(busybox_dl_file_name, "rb") as f:
             bytes = f.read()
             busybox_loc_md5 = hashlib.md5(bytes).hexdigest()
 
-
     system_img = os.path.join(get_image_dir(), "system.img")
     if not os.path.isfile(system_img):
-        print("The system image path '{}' from waydroid config is not valid !".format(system_img))
+        print(
+            "The system image path '{}' from waydroid config is not valid !".format(
+                system_img
+            )
+        )
         sys.exit(1)
     print("==> Found system image: " + system_img)
 
-    img_size = int(os.path.getsize(system_img)/(1024*1024))
+    img_size = int(os.path.getsize(system_img) / (1024 * 1024))
 
     # Resize image to get some free space
-    resize_img(system_img, "{}M".format(img_size+50))
+    resize_img(system_img, "{}M".format(img_size + 50))
 
     # Mount the system image
     mount_image(system_img, sys_image_mount)
@@ -485,10 +627,14 @@ service magisk /system/bin/init-magisk.sh
         loc_md5 = download_file(dl_link, dl_file_name)
 
     # Download busybox android binary
-    while not os.path.isfile(busybox_dl_file_name) or busybox_loc_md5 != busybox_act_md5:
+    while (
+        not os.path.isfile(busybox_dl_file_name) or busybox_loc_md5 != busybox_act_md5
+    ):
         if os.path.isfile(busybox_dl_file_name):
             os.remove(busybox_dl_file_name)
-        print("==> BusyBox binary not downloaded or hash mismatches, downloading now .....")
+        print(
+            "==> BusyBox binary not downloaded or hash mismatches, downloading now ....."
+        )
         busybox_loc_md5 = download_file(busybox_dl_link, busybox_dl_file_name)
 
     # Extract magisk files
@@ -498,16 +644,31 @@ service magisk /system/bin/init-magisk.sh
 
     # Now setup and install magisk binary and app
     print("==> Installing magisk now ...")
-    with open(os.path.join(sys_image_mount, "system", "bin", "init-magisk.sh"), "w") as imf:
+    with open(
+        os.path.join(sys_image_mount, "system", "bin", "init-magisk.sh"), "w"
+    ) as imf:
         imf.write(magisk_init)
-    os.system("chmod 755 {}".format(os.path.join(sys_image_mount, "system", "bin", "init-magisk.sh")))
+    os.system(
+        "chmod 755 {}".format(
+            os.path.join(sys_image_mount, "system", "bin", "init-magisk.sh")
+        )
+    )
     arch_dir = "x86" if "x86" in platform.machine() else "arm"
     arch = "64" if "64" in platform.machine() else ""
-    shutil.copyfile(os.path.join(extract_to, arch_dir, "magiskinit{arch}".format(arch=arch)),
-                    os.path.join(sys_image_mount, "sbin", "magiskinit"))
-    shutil.copyfile(os.path.join(extract_to, arch_dir, "magiskinit{arch}".format(arch=arch)),
-                    os.path.join(sys_image_mount, "magiskinit"))
-    os.system("chmod 755 {} & chmod 755 {}".format(os.path.join(sys_image_mount, "sbin", "magiskinit"), os.path.join(sys_image_mount, "magiskinit")))
+    shutil.copyfile(
+        os.path.join(extract_to, arch_dir, "magiskinit{arch}".format(arch=arch)),
+        os.path.join(sys_image_mount, "sbin", "magiskinit"),
+    )
+    shutil.copyfile(
+        os.path.join(extract_to, arch_dir, "magiskinit{arch}".format(arch=arch)),
+        os.path.join(sys_image_mount, "magiskinit"),
+    )
+    os.system(
+        "chmod 755 {} & chmod 755 {}".format(
+            os.path.join(sys_image_mount, "sbin", "magiskinit"),
+            os.path.join(sys_image_mount, "magiskinit"),
+        )
+    )
 
     # Copy busybox
     print("==> Installing BusyBox")
@@ -516,16 +677,30 @@ service magisk /system/bin/init-magisk.sh
 
     # Copy files from common directory
     for file in ["util_functions.sh", "boot_patch.sh", "addon.d.sh"]:
-        shutil.copyfile(os.path.join(extract_to, "common", file),
-                        os.path.join(sys_image_mount, file))
+        shutil.copyfile(
+            os.path.join(extract_to, "common", file),
+            os.path.join(sys_image_mount, file),
+        )
         os.system("chmod 755 {}".format(os.path.join(sys_image_mount, file)))
 
     # Create symlinks
     print("==> Creating symlinks")
-    os.system("cd {root}/sbin && ln -sf magiskinit magiskinit >> /dev/null 2>&1".format(root=sys_image_mount))
-    os.system("cd {root}/sbin && ln -sf magiskinit magisk >> /dev/null 2>&1".format(root=sys_image_mount))
+    os.system(
+        "cd {root}/sbin && ln -sf magiskinit magiskinit >> /dev/null 2>&1".format(
+            root=sys_image_mount
+        )
+    )
+    os.system(
+        "cd {root}/sbin && ln -sf magiskinit magisk >> /dev/null 2>&1".format(
+            root=sys_image_mount
+        )
+    )
     print("==>     magiskinit  ->  magisk")
-    os.system("cd {root}/sbin && ln -sf /magiskinit magiskpolicy >> /dev/null 2>&1".format(root=sys_image_mount))
+    os.system(
+        "cd {root}/sbin && ln -sf /magiskinit magiskpolicy >> /dev/null 2>&1".format(
+            root=sys_image_mount
+        )
+    )
     print("==>     magiskinit  ->  magiskpolicy")
 
     # Add entry to init.rc
@@ -533,15 +708,19 @@ service magisk /system/bin/init-magisk.sh
     with open(os.path.join(sys_image_mount, "init.rc"), "r") as initfile:
         initcontent = initfile.read()
         if init_rc_component not in initcontent:
-            initcontent=initcontent+init_rc_component
+            initcontent = initcontent + init_rc_component
     with open(os.path.join(sys_image_mount, "init.rc"), "w") as initfile:
         initfile.write(initcontent)
 
     # Install Magisk apk
-    if not os.path.exists(os.path.join(sys_image_mount, "system", "priv-app", "Magisk")):
+    if not os.path.exists(
+        os.path.join(sys_image_mount, "system", "priv-app", "Magisk")
+    ):
         os.makedirs(os.path.join(sys_image_mount, "system", "priv-app", "Magisk"))
-    shutil.copyfile(os.path.join(extract_to, "common", "magisk.apk"),
-                    os.path.join(sys_image_mount, "system", "priv-app", "Magisk", "magisk.apk"))
+    shutil.copyfile(
+        os.path.join(extract_to, "common", "magisk.apk"),
+        os.path.join(sys_image_mount, "system", "priv-app", "Magisk", "magisk.apk"),
+    )
 
     # Unmount and exit
     print("==> Unmounting .. ")
@@ -551,35 +730,57 @@ service magisk /system/bin/init-magisk.sh
         print("==> Warning: umount failed.. {} ".format(str(e.output.decode())))
 
     print("==> Magisk was  installed ! Restart waydroid service to apply changes !")
+
+
 def main():
     about = """
     WayDroid Helper script v0.3
     Does stuff like installing Gapps, Installing NDK Translation and getting Android ID for device registration.
     Use -h  flag for help !
     """
-    parser = argparse.ArgumentParser(description=about, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-g', '--install-gapps',
-                        dest='install',
-                        help='Install OpenGapps to waydroid',
-                        action='store_true')
-    parser.add_argument('-n', '--install-ndk-translation',
-                        dest='installndk',
-                        help='Install experimental libndk translation files',
-                        action='store_true')
-    parser.add_argument('-i', '--get-android-id', dest='getid',
-                        help='Displays your android id for manual registration',
-                        action='store_true')
-    parser.add_argument('-m', '--install-magisk', dest='magisk',
-                        help='Attempts to install Magisk ( Bootless )',
-                        action='store_true')
-    parser.add_argument('-l', '--install-libhoudini', dest='houdini',
-                        help='Install libhoudini for arm translation',
-                        action='store_true')
+    parser = argparse.ArgumentParser(
+        description=about, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "-g",
+        "--install-gapps",
+        dest="install",
+        help="Install OpenGapps to waydroid",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-n",
+        "--install-ndk-translation",
+        dest="installndk",
+        help="Install experimental libndk translation files",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-i",
+        "--get-android-id",
+        dest="getid",
+        help="Displays your android id for manual registration",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-m",
+        "--install-magisk",
+        dest="magisk",
+        help="Attempts to install Magisk ( Bootless )",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-l",
+        "--install-libhoudini",
+        dest="houdini",
+        help="Install libhoudini for arm translation",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     if args.install:
         stop_waydroid()
-        install_gapps()
+        install_gapps_a11()
     elif args.installndk:
         stop_waydroid()
         install_ndk()
@@ -589,6 +790,7 @@ def main():
         install_magisk()
     elif args.houdini:
         install_houdini()
+
 
 if __name__ == "__main__":
     main()
